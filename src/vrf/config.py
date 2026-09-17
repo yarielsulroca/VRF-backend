@@ -3,6 +3,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _DEBILES = frozenset({"", "change-me", "changeme"})
 
 
+def sqlalchemy_url(raw: str) -> str:
+    """Railway/Render dan postgres:// o postgresql://; SQLAlchemy+psycopg pide el dialecto."""
+    url = raw.strip()
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://") :]
+    if url.startswith("postgresql://") and not url.startswith("postgresql+"):
+        return "postgresql+psycopg://" + url[len("postgresql://") :]
+    return url
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -16,6 +26,10 @@ class Settings(BaseSettings):
     operativo_password: str = "change-me"
     cors_origins: str = "http://localhost:3000"
     vrf_env: str = "development"
+
+    @property
+    def sqlalchemy_database_url(self) -> str:
+        return sqlalchemy_url(self.database_url)
 
     @property
     def is_production(self) -> bool:

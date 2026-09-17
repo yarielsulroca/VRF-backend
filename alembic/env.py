@@ -5,6 +5,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from vrf.adapters.outbound.postgres.models import Base
+from vrf.config import sqlalchemy_url
 
 config = context.config
 if config.config_file_name is not None:
@@ -12,7 +13,7 @@ if config.config_file_name is not None:
 
 database_url = os.getenv("DATABASE_URL")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+    config.set_main_option("sqlalchemy.url", sqlalchemy_url(database_url).replace("%", "%%"))
 
 target_metadata = Base.metadata
 

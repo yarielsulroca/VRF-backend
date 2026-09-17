@@ -4,9 +4,15 @@ from fastapi.testclient import TestClient
 
 from vrf.adapters.inbound.api.handlers import register_handlers
 from vrf.adapters.outbound.auth.jwt import JwtTokens
-from vrf.config import Settings
+from vrf.config import Settings, sqlalchemy_url
 from vrf.domain.exceptions import Unauthorized
 from vrf.main import create_app
+
+
+def test_sqlalchemy_url_railway() -> None:
+    assert sqlalchemy_url("postgres://u:p@host:5432/db").startswith("postgresql+psycopg://")
+    assert sqlalchemy_url("postgresql://u:p@host:5432/db").startswith("postgresql+psycopg://")
+    assert sqlalchemy_url("postgresql+psycopg://u:p@host:5432/db") == "postgresql+psycopg://u:p@host:5432/db"
 
 
 def test_health_sin_auth() -> None:
