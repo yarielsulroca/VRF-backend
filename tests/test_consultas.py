@@ -210,6 +210,33 @@ def _libro(items: list[Comprobante]) -> ExportarLibroIva:
     )
 
 
+def test_impuestos_por_clasificacion_ignora_pendientes() -> None:
+    compra = _comp(percep_iibb=Decimal("3.00"))
+    pago = _comp(
+        clasificacion=Clasificacion.PAGO,
+        numero=2,
+        rubro_id=None,
+        tipo_pago_id=uuid4(),
+        iva_21=Decimal("10.00"),
+        iva_105=Decimal("5.00"),
+    )
+    costo_pendiente = _comp(
+        clasificacion=Clasificacion.COSTO,
+        numero=3,
+        estado_pago=EstadoPago.PENDIENTE,
+        iva_21=Decimal("99.00"),
+    )
+    dash = _dash([compra, pago, costo_pendiente]).execute(_admin(), mes="2026-07")
+    por = {x.clasificacion: x for x in dash.impuestos_por_clasificacion}
+    assert [x.clasificacion for x in dash.impuestos_por_clasificacion] == ["compra", "pago", "costo"]
+    assert por["compra"].iva_21 == dinero("21.00")
+    assert por["compra"].percep_iibb == dinero("3.00")
+    assert por["compra"].total == dinero("24.00")
+    assert por["pago"].iva_21 == dinero("10.00")
+    assert por["pago"].iva_105 == dinero("5.00")
+    assert por["costo"].iva_21 == dinero(0)
+
+
 def test_pendiente_no_mueve_dashboard() -> None:
     dash = _dash([_comp(estado_pago=EstadoPago.PENDIENTE)]).execute(_admin(), mes="2026-07")
     assert dash.total_comprobado == dinero(0)

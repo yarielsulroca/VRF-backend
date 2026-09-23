@@ -66,6 +66,33 @@ class TotalClasificacion:
 
 
 @dataclass
+class ImpuestosClasificacion:
+    clasificacion: str
+    iva_21: Decimal
+    iva_105: Decimal
+    iva_27: Decimal
+    percep_iva: Decimal
+    percep_iibb: Decimal
+    total: Decimal
+
+
+def _suma_campo(items: list[Comprobante], campo: str) -> Decimal:
+    return dinero(sum((getattr(c, campo) for c in items), _CERO))
+
+
+def _impuestos(clasificacion: str, items: list[Comprobante]) -> ImpuestosClasificacion:
+    return ImpuestosClasificacion(
+        clasificacion=clasificacion,
+        iva_21=_suma_campo(items, "iva_21"),
+        iva_105=_suma_campo(items, "iva_105"),
+        iva_27=_suma_campo(items, "iva_27"),
+        percep_iva=_suma_campo(items, "percep_iva"),
+        percep_iibb=_suma_campo(items, "percep_iibb"),
+        total=dinero(sum((solo_impuestos(c) for c in items), _CERO)),
+    )
+
+
+@dataclass
 class TotalEmpresa:
     empresa_id: UUID
     razon_social: str
@@ -99,6 +126,7 @@ class Dashboard:
     solo_impuestos: Decimal
     obras_abiertas: int
     por_clasificacion: list[TotalClasificacion]
+    impuestos_por_clasificacion: list[ImpuestosClasificacion]
     por_empresa: list[TotalEmpresa]
     top_obras: list[TopObra]
     pendientes: list[PendienteDash]
@@ -200,13 +228,16 @@ class ConsultarDashboard:
         kpis = [c for c in filas if entra_kpi(c, d, h)]
         total = sumar_totales(kpis)
         por_clase = []
+        impuestos = []
         for clase in Clasificacion:
+            de_clase = [c for c in kpis if c.clasificacion == clase]
             por_clase.append(
                 TotalClasificacion(
                     clasificacion=clase.value,
-                    total=sumar_totales([c for c in kpis if c.clasificacion == clase]),
+                    total=sumar_totales(de_clase),
                 )
             )
+            impuestos.append(_impuestos(clase.value, de_clase))
         por_emp: dict[UUID, Decimal] = defaultdict(lambda: _CERO)
         for c in kpis:
             por_emp[c.empresa_id] += c.total
@@ -261,6 +292,7 @@ class ConsultarDashboard:
             solo_impuestos=dinero(sum((solo_impuestos(c) for c in kpis), _CERO)),
             obras_abiertas=abiertas,
             por_clasificacion=por_clase,
+            impuestos_por_clasificacion=impuestos,
             por_empresa=empresas_out,
             top_obras=top,
             pendientes=pendientes,
