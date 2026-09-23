@@ -144,6 +144,7 @@ class Comprobante:
     total: Decimal
     estado_pago: EstadoPago
     cuit_emisor: str | None
+    numero_comprobante: str | None = None
     nota: str | None = None
     extra: dict = field(default_factory=dict)
     comprobado_en: datetime | None = None

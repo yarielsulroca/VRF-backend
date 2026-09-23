@@ -110,6 +110,14 @@ class ComprobanteRepository(Protocol):
         estado_pago: str | None = None,
         desde: date | None = None,
         hasta: date | None = None,
+        cliente_id: UUID | None = None,
+        proveedor_id: UUID | None = None,
+        clasificacion: str | None = None,
+        rubro_id: UUID | None = None,
+        tipo_pago_id: UUID | None = None,
+        q: str | None = None,
+        limit: int = 500,
+        offset: int = 0,
     ) -> list[Comprobante]: ...
     def posible_duplicado_foto(
         self, sha256: str, proveedor_id: UUID | None, numero: int | None, fecha

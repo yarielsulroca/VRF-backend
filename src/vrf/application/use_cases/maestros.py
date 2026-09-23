@@ -23,6 +23,21 @@ def _require_admin(actor: Usuario) -> None:
         raise Forbidden("Solo el admin edita maestros")
 
 
+def _cuit_opcional(cuit: str | None) -> str | None:
+    """Vacío / espacios → None. Si hay valor, exige CUIT AFIP válido."""
+    if cuit is None:
+        return None
+    raw = str(cuit).strip()
+    if not raw:
+        return None
+    try:
+        return Cuit(raw).value
+    except InvalidInput as exc:
+        raise InvalidInput(
+            "CUIT inválido: usá 11 dígitos con verificador correcto (ej. 20-12345678-6), o dejalo vacío"
+        ) from exc
+
+
 class CrearEspecialidad:
     def __init__(self, repo: EspecialidadRepository, grupos: GrupoReader, uow: UnitOfWork) -> None:
         self._repo = repo
@@ -111,7 +126,7 @@ class CrearCliente:
         grupo_id, _ = self._grupos.get_unico()
         if self._clientes.get_by_nombre(grupo_id, nombre.strip()):
             raise Conflict("Ya existe un cliente con ese nombre")
-        cuit_n = Cuit(cuit).value if cuit else None
+        cuit_n = _cuit_opcional(cuit)
         item = Cliente(id=uuid4(), grupo_id=grupo_id, nombre=nombre.strip(), cuit=cuit_n)
         self._clientes.add(item)
         self._uow.commit()
@@ -137,7 +152,7 @@ class CrearProveedor:
     def execute(self, actor: Usuario, razon_social: str, cuit: str | None, notas: str | None) -> Proveedor:
         _require_admin(actor)
         grupo_id, _ = self._grupos.get_unico()
-        cuit_n = Cuit(cuit).value if cuit else None
+        cuit_n = _cuit_opcional(cuit)
         if cuit_n and self._proveedores.get_by_cuit(cuit_n):
             raise Conflict("CUIT de proveedor ya cargado")
         item = Proveedor(
@@ -400,7 +415,7 @@ class ActualizarCliente:
                 raise Conflict("Ya existe un cliente con ese nombre")
             item.nombre = nombre.strip()
         if cuit_set:
-            item.cuit = Cuit(cuit).value if cuit else None
+            item.cuit = _cuit_opcional(cuit)
         if activo is not None:
             item.activo = activo
         self._clientes.save(item)
@@ -441,7 +456,7 @@ class ActualizarProveedor:
         if razon_social is not None:
             item.razon_social = razon_social
         if cuit_set:
-            cuit_n = Cuit(cuit).value if cuit else None
+            cuit_n = _cuit_opcional(cuit)
             if cuit_n:
                 otro = self._proveedores.get_by_cuit(cuit_n)
                 if otro and otro.id != item.id:

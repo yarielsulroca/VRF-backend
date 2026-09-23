@@ -40,6 +40,11 @@ class PreviewOcr:
             "tipo_afip": resultado.tipo_afip.value if resultado.tipo_afip else None,
             "punto_venta": resultado.punto_venta,
             "numero": resultado.numero,
+            "numero_comprobante": (
+                f"{resultado.punto_venta:04d}-{resultado.numero:08d}"
+                if resultado.punto_venta is not None and resultado.numero is not None
+                else None
+            ),
             "fecha": resultado.fecha.isoformat() if resultado.fecha else None,
             "neto_21": str(resultado.neto_21) if resultado.neto_21 is not None else None,
             "iva_21": str(resultado.iva_21) if resultado.iva_21 is not None else None,

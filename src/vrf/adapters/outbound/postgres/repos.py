@@ -444,8 +444,20 @@ class ComprobanteRepo:
         estado_pago: str | None = None,
         desde: date | None = None,
         hasta: date | None = None,
+        cliente_id: UUID | None = None,
+        proveedor_id: UUID | None = None,
+        clasificacion: str | None = None,
+        rubro_id: UUID | None = None,
+        tipo_pago_id: UUID | None = None,
+        q: str | None = None,
+        limit: int = 500,
+        offset: int = 0,
     ) -> list[Comprobante]:
         stmt = select(m.ComprobanteModel)
+        if cliente_id:
+            stmt = stmt.join(m.ObraModel, m.ComprobanteModel.obra_id == m.ObraModel.id).where(
+                m.ObraModel.cliente_id == cliente_id
+            )
         if empresa_id:
             stmt = stmt.where(m.ComprobanteModel.empresa_id == empresa_id)
         if obra_id:
@@ -456,7 +468,22 @@ class ComprobanteRepo:
             stmt = stmt.where(m.ComprobanteModel.fecha >= desde)
         if hasta:
             stmt = stmt.where(m.ComprobanteModel.fecha <= hasta)
-        stmt = stmt.order_by(m.ComprobanteModel.fecha.desc())
+        if proveedor_id:
+            stmt = stmt.where(m.ComprobanteModel.proveedor_id == proveedor_id)
+        if clasificacion:
+            stmt = stmt.where(m.ComprobanteModel.clasificacion == clasificacion)
+        if rubro_id:
+            stmt = stmt.where(m.ComprobanteModel.rubro_id == rubro_id)
+        if tipo_pago_id:
+            stmt = stmt.where(m.ComprobanteModel.tipo_pago_id == tipo_pago_id)
+        if q:
+            like = f"%{q.strip()}%"
+            stmt = stmt.where(
+                m.ComprobanteModel.numero_comprobante.ilike(like)
+                | m.ComprobanteModel.nota.ilike(like)
+                | m.ComprobanteModel.cuit_emisor.ilike(like)
+            )
+        stmt = stmt.order_by(m.ComprobanteModel.fecha.desc()).offset(offset).limit(limit)
         return [map_.comprobante(r) for r in self._s.scalars(stmt)]
 
     def posible_duplicado_foto(
@@ -517,6 +544,7 @@ class ComprobanteRepo:
         row.tipo_afip = item.tipo_afip.value
         row.punto_venta = item.punto_venta
         row.numero = item.numero
+        row.numero_comprobante = item.numero_comprobante
         row.fecha = item.fecha
         row.neto_21 = item.neto_21
         row.iva_21 = item.iva_21

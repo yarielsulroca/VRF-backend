@@ -179,6 +179,7 @@ class FakeComps:
         estado_pago=None,
         desde=None,
         hasta=None,
+        **_kwargs,
     ) -> list[Comprobante]:
         out = list(self.items)
         if empresa_id:

@@ -79,6 +79,8 @@ from vrf.application.use_cases.obras import (
     ObtenerObra,
     QuitarParticipacion,
 )
+from vrf.application.use_cases.planilla import ConfirmarImportacion, ExportarRegistros, PreviaImportacion
+from vrf.adapters.outbound.planilla.xlsx import OpenpyxlEscritor
 from vrf.config import settings
 from vrf.domain.entities import Usuario
 from vrf.domain.exceptions import Unauthorized
@@ -301,12 +303,41 @@ def listar_comprobantes_uc(c: Container = Depends(container)) -> ListarComproban
     return ListarComprobantes(c.comprobantes)
 
 
+def exportar_registros_uc(c: Container = Depends(container)) -> ExportarRegistros:
+    return ExportarRegistros(
+        ListarComprobantes(c.comprobantes),
+        OpenpyxlEscritor(),
+        c.obras,
+        c.proveedores,
+        c.rubros,
+        c.tipos,
+        c.clientes,
+    )
+
+
+def previa_importacion_uc(c: Container = Depends(container)) -> PreviaImportacion:
+    return PreviaImportacion(
+        c.comprobantes,
+        c.proveedores,
+        c.rubros,
+        c.tipos,
+        c.obras,
+        settings.jwt_secret,
+    )
+
+
+def confirmar_importacion_uc(c: Container = Depends(container)) -> ConfirmarImportacion:
+    previa = previa_importacion_uc(c)
+    crear = crear_comprobante_uc(c)
+    return ConfirmarImportacion(previa, crear, c.proveedores, c.rubros, c.uow, settings.jwt_secret)
+
+
 def obtener_comprobante_uc(c: Container = Depends(container)) -> ObtenerComprobante:
     return ObtenerComprobante(c.comprobantes)
 
 
 def actualizar_comprobante_uc(c: Container = Depends(container)) -> ActualizarComprobante:
-    return ActualizarComprobante(c.comprobantes, c.uow)
+    return ActualizarComprobante(c.comprobantes, c.obras, c.rubros, c.tipos, c.uow)
 
 
 def reemplazar_archivo_uc(c: Container = Depends(container)) -> ReemplazarArchivo:

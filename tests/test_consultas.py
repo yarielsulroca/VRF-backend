@@ -95,6 +95,7 @@ class FakeComps:
         estado_pago=None,
         desde=None,
         hasta=None,
+        **_kwargs,
     ) -> list[Comprobante]:
         out = self.items
         if empresa_id:

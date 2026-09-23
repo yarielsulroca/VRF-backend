@@ -144,6 +144,7 @@ def comprobante(row: m.ComprobanteModel) -> Comprobante:
         tipo_afip=TipoAfip(row.tipo_afip),
         punto_venta=row.punto_venta,
         numero=row.numero,
+        numero_comprobante=getattr(row, "numero_comprobante", None),
         fecha=row.fecha,
         neto_21=dinero(row.neto_21),
         iva_21=dinero(row.iva_21),

@@ -23,6 +23,60 @@ CAE N°: 12345678901234
 """
 
 
+# Factura C real: pypdf emite las etiquetas y los valores en bloques separados
+# porque el PDF de AFIP está maquetado en columnas.
+TEXTO_COLUMNAS = """
+Fecha de Emisión:
+ORIGINAL
+SULROCA GONZALEZ YARIEL
+Pedro Nolasco Carrion 480 Dpto:408 -
+Período Facturado Desde: Hasta: Fecha de Vto. para el pago:
+Condición frente al IVA:
+Apellido y Nombre / Razón Social:
+Domicilio:
+11/09/2026 11/09/2026 11/09/2026
+27963709973
+VRF S.A.
+CUIT:
+Punto de Venta: Comp. Nro:00001 00000027
+Razón Social:
+FACTURACCOD. 011
+Responsable Monotributo
+27963709973
+CUIT: 33711174929
+0,00
+63550,00
+63550,00
+Subtotal: $
+Importe Otros Tributos: $
+Importe Total: $
+CAE N°:
+Fecha de Vto. de CAE:
+Comprobante Autorizado
+21/09/2026
+86372611526307
+"SULROCA GONZALEZ YARIEL"
+"""
+
+
+# Salida real de Tesseract sobre la misma factura escaneada: respeta el layout
+# visual, así que etiqueta y valor caen juntos, con "$" en el medio.
+TEXTO_OCR = """
+ORIGINAL
+COD. 011
+Punto de Venta: 00001 Comp. Nro: 00000027
+Razón Social: SULROCA GONZALEZ YARIEL Fecha de Emisión: 11/09/2026
+Domicilio Comercial: Pedro Nolasco Carrion 480 Dpto:408 - CUIT: 27963709973
+Condición frente al IVA: Responsable Monotributo
+CUIT: 33711174929 Apellido y Nombre / Razón Social: VRF S.A.
+Subtotal: $ 63550,00
+Importe Otros Tributos: $ 0,00
+Importe Total: $ 63550,00
+"SULROCA GONZALEZ YARIEL"
+ARCA Pág. 1/1 CAE N°: 86372611526307
+"""
+
+
 def test_parse_importe_argentino() -> None:
     assert parse_importe("1.234,56") == Decimal("1234.56")
     assert parse_importe("121,00") == Decimal("121.00")
@@ -41,6 +95,42 @@ def test_parse_afip_extrae_si_esta() -> None:
     assert r.total == Decimal("121.00")
     assert r.cae == "12345678901234"
     assert r.incompleto() is False
+
+
+def test_parse_afip_layout_en_columnas() -> None:
+    r = parse_afip_text(TEXTO_COLUMNAS)
+    assert r.cuit_emisor == "27963709973"
+    assert r.razon_social == "SULROCA GONZALEZ YARIEL"
+    assert r.tipo_afip == TipoAfip.C
+    assert r.punto_venta == 1
+    assert r.numero == 27
+    assert r.fecha and r.fecha.isoformat() == "2026-09-11"
+    assert r.total == Decimal("63550.00")
+    assert r.cae == "86372611526307"
+    assert r.incompleto() is False
+
+
+def test_parse_afip_texto_de_ocr() -> None:
+    r = parse_afip_text(TEXTO_OCR)
+    assert r.cuit_emisor == "27963709973"
+    assert r.razon_social == "SULROCA GONZALEZ YARIEL"
+    assert r.tipo_afip == TipoAfip.C
+    assert r.punto_venta == 1
+    assert r.numero == 27
+    assert r.fecha and r.fecha.isoformat() == "2026-09-11"
+    assert r.cae == "86372611526307"
+    # No debe confundir "Otros Tributos: $ 0,00" con el total.
+    assert r.total == Decimal("63550.00")
+
+
+def test_total_en_cero_se_descarta() -> None:
+    r = parse_afip_text("FACTURA B\nCUIT: 30-71234562-0\nImporte Total: $ 0,00\n")
+    assert r.total is None
+
+
+def test_razon_social_no_toma_la_etiqueta_siguiente() -> None:
+    r = parse_afip_text("Razón Social:\nDomicilio:\nCondición frente al IVA:\n")
+    assert r.razon_social is None
 
 
 def test_no_inventa_total() -> None:

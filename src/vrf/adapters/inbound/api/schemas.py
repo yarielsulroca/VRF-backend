@@ -158,6 +158,7 @@ class ComprobanteAltaIn(BaseModel):
     tipo_afip: str
     punto_venta: int | None = None
     numero: int | None = None
+    numero_comprobante: str | None = None
     fecha: date
     neto_21: Decimal = Decimal("0")
     iva_21: Decimal = Decimal("0")
@@ -175,15 +176,14 @@ class ComprobanteAltaIn(BaseModel):
 
 
 class ComprobantePatch(BaseModel):
-    nota: str | None = None
-    extra: dict | None = None
-    total: Decimal | None = None
-    neto_21: Decimal | None = None
-    iva_21: Decimal | None = None
-    neto_105: Decimal | None = None
-    iva_105: Decimal | None = None
-    neto_27: Decimal | None = None
-    iva_27: Decimal | None = None
-    no_gravado: Decimal | None = None
-    percep_iva: Decimal | None = None
-    percep_iibb: Decimal | None = None
+    """Solo organización / clasificación. Datos propios de la factura son inmutables."""
+
+    obra_id: UUID | None = None
+    rubro_id: UUID | None = None
+    tipo_pago_id: UUID | None = None
+    clasificacion: str | None = None
+    clear_obra: bool = False
+
+
+class ImportarConfirmarIn(BaseModel):
+    token: str

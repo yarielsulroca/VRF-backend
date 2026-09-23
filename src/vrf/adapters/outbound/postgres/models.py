@@ -153,6 +153,7 @@ class ComprobanteModel(Base):
     tipo_afip: Mapped[str] = mapped_column(String(10))
     punto_venta: Mapped[int | None] = mapped_column(Integer, nullable=True)
     numero: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    numero_comprobante: Mapped[str | None] = mapped_column(String(60), nullable=True)
     fecha: Mapped[date] = mapped_column(Date)
     neto_21: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
     iva_21: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)

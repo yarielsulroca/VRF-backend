@@ -18,6 +18,10 @@ dependencies = [
   "PyJWT",
   "python-multipart",
   "pypdf",
+  "pytesseract",
+  "Pillow",
+  "pypdfium2",
+  "openpyxl",
 ]
 
 [project.optional-dependencies]
