@@ -15,6 +15,9 @@ depends_on = None
 
 
 def upgrade() -> None:
+    columnas = {c["name"] for c in sa.inspect(op.get_bind()).get_columns("comprobantes")}
+    if "numero_comprobante" in columnas:
+        return
     op.add_column(
         "comprobantes",
         sa.Column("numero_comprobante", sa.String(length=60), nullable=True),
